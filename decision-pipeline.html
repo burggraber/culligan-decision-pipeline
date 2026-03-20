@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Pipeline — Culligan KC</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F5F3EE;
+  --surface: #FFFFFF;
+  --surface2: #EFEDE7;
+  --border: #DDD9CF;
+  --border2: #C8C3B5;
+  --text: #1A1916;
+  --text2: #6B6760;
+  --text3: #9E9A91;
+  --accent: #1A3A2A;
+  --accent-light: #E8F0EB;
+  --accent-mid: #4A7C5F;
+  --amber: #7A4F1A;
+  --amber-bg: #FDF3E3;
+  --amber-border: #E8C97A;
+  --red: #6B1E1E;
+  --red-bg: #FDF0F0;
+  --blue: #1A2E4A;
+  --blue-bg: #EEF3FA;
+  --blue-border: #A8C0DC;
+  --purple: #3A1A5A;
+  --purple-bg: #F3EEF9;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 6px;
+  --radius-lg: 10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body { background: var(--bg); font-family: var(--sans); color: var(--text); min-height: 100vh; }
+
+/* HEADER */
+.app-header {
+  background: var(--accent);
+  padding: 0 2rem;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.app-header-left { display: flex; align-items: center; gap: 16px; }
+.app-logo { font-family: var(--mono); font-size: 13px; color: #A8C4B0; letter-spacing: .06em; text-transform: uppercase; }
+.app-title { font-size: 13px; font-weight: 500; color: #FFFFFF; letter-spacing: .02em; }
+.header-meta { font-family: var(--mono); font-size: 11px; color: #6A9478; }
+.btn-new {
+  background: #A8C4B0; color: var(--accent); border: none; border-radius: var(--radius);
+  font-family: var(--sans); font-size: 12px; font-weight: 600; padding: 6px 14px;
+  cursor: pointer; letter-spacing: .03em; transition: background .15s;
+}
+.btn-new:hover { background: #BDD4C5; }
+
+/* METRICS BAR */
+.metrics-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: .75rem 2rem;
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.metric-item { display: flex; flex-direction: column; gap: 1px; }
+.metric-val { font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--text); line-height: 1; }
+.metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--text3); }
+.metric-divider { width: 1px; height: 32px; background: var(--border); }
+
+/* FILTERS */
+.filter-bar {
+  padding: .75rem 2rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.filter-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); margin-right: 4px; }
+select.filter-select {
+  font-family: var(--sans); font-size: 12px; color: var(--text2);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 5px 10px; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239E9A91' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+  padding-right: 24px;
+}
+.search-input {
+  font-family: var(--sans); font-size: 12px; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 5px 10px; width: 200px;
+}
+.search-input:focus { outline: none; border-color: var(--accent-mid); }
+
+/* PIPELINE */
+.pipeline-wrap { padding: 1rem 2rem 2rem; overflow-x: auto; }
+.pipeline { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 10px; min-width: 900px; }
+.lane {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.lane-head {
+  padding: .6rem .85rem;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.lane-name { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text2); }
+.lane-badge {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1px 8px; color: var(--text3);
+}
+.lane-body { padding: .6rem; min-height: 100px; }
+.empty-msg { font-size: 12px; color: var(--text3); text-align: center; padding: 1.5rem 0; font-style: italic; }
+
+/* TOPIC CARDS */
+.topic-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .65rem .75rem;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color .12s, box-shadow .12s;
+  position: relative;
+}
+.topic-card:hover { border-color: var(--border2); box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.topic-card.declined { opacity: .5; }
+.card-title { font-size: 12px; font-weight: 500; color: var(--text); line-height: 1.4; margin-bottom: 6px; }
+.card-footer { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.tag {
+  font-size: 10px; font-weight: 500; padding: 2px 6px;
+  border-radius: 3px; letter-spacing: .02em;
+}
+.tag-mgr { background: var(--blue-bg); color: var(--blue); }
+.tag-tripod { background: var(--purple-bg); color: var(--purple); }
+.tag-roundtable { background: var(--accent-light); color: var(--accent); }
+.tag-ceo { background: var(--amber-bg); color: var(--amber); }
+.tag-hh { background: #FDF0F0; color: #6B1E1E; }
+.tag-dw { background: #EEF3FA; color: #1A2E4A; }
+.tag-com { background: #FDF3E3; color: #7A4F1A; }
+.tag-all { background: var(--surface2); color: var(--text2); }
+.card-dots { display: flex; gap: 3px; margin-top: 5px; }
+.cdot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); }
+.cdot.on { background: var(--accent-mid); }
+.card-declined-tag {
+  position: absolute; top: 6px; right: 6px;
+  font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
+  background: var(--red-bg); color: var(--red); padding: 1px 5px; border-radius: 3px;
+}
+
+/* MODAL */
+.overlay {
+  position: fixed; inset: 0; background: rgba(20,18,14,.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 1rem;
+}
+.overlay.hidden { display: none; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); width: 100%; max-width: 600px;
+  max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+}
+.modal-head {
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  position: sticky; top: 0; background: var(--surface); z-index: 2;
+}
+.modal-head-title { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.3; }
+.modal-head-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+.btn-close {
+  background: none; border: none; cursor: pointer; color: var(--text3);
+  font-size: 18px; line-height: 1; padding: 2px; flex-shrink: 0;
+  transition: color .12s;
+}
+.btn-close:hover { color: var(--text); }
+.modal-body { padding: 1.25rem 1.5rem; }
+.modal-foot {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  position: sticky; bottom: 0; background: var(--surface); z-index: 2;
+}
+.modal-foot-left { display: flex; gap: 8px; }
+.modal-foot-right { display: flex; gap: 8px; }
+
+/* FORM ELEMENTS */
+.field { margin-bottom: 1rem; }
+.field:last-child { margin-bottom: 0; }
+.field label {
+  display: block; font-size: 11px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text3); margin-bottom: 4px;
+}
+.field input, .field select, .field textarea {
+  width: 100%; font-family: var(--sans); font-size: 13px; color: var(--text);
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 7px 10px;
+  transition: border-color .12s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--accent-mid);
+  background: var(--surface);
+}
+.field textarea { resize: vertical; line-height: 1.5; min-height: 60px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* SECTION HEADERS IN MODAL */
+.section-head {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--text3); border-top: 1px solid var(--border);
+  padding-top: .85rem; margin-top: 1rem; margin-bottom: .75rem;
+}
+.section-head:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+
+/* IMPACT CHECKS */
+.impact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.impact-row { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text2); }
+.impact-row input[type=checkbox] { width: 13px; height: 13px; cursor: pointer; accent-color: var(--accent-mid); }
+
+/* STAGE NAV */
+.stage-nav { display: flex; gap: 4px; flex-wrap: wrap; }
+.stage-btn {
+  font-family: var(--sans); font-size: 11px; font-weight: 500;
+  padding: 5px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text2); cursor: pointer; transition: all .12s;
+  letter-spacing: .02em;
+}
+.stage-btn:hover { border-color: var(--border2); color: var(--text); }
+.stage-btn.active {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+
+/* NOTE BOXES */
+.note-box {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: .85rem;
+  margin-bottom: .6rem;
+}
+.note-box-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--text3); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+}
+.note-stage-dot { width: 6px; height: 6px; border-radius: 50%; }
+.dot-tripod { background: var(--purple); }
+.dot-exec { background: var(--amber); }
+.dot-synch { background: var(--accent-mid); }
+.note-box textarea {
+  width: 100%; font-family: var(--sans); font-size: 12px; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 6px 8px; resize: vertical;
+  min-height: 52px; line-height: 1.5;
+}
+.note-box textarea:focus { outline: none; border-color: var(--accent-mid); }
+
+/* DETAIL VIEW */
+.detail-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+.detail-table tr td { padding: 5px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.detail-table tr:last-child td { border-bottom: none; }
+.detail-key { color: var(--text3); width: 35%; font-weight: 500; padding-right: 12px; }
+.detail-val { color: var(--text); line-height: 1.5; }
+.impact-flags { display: flex; flex-wrap: wrap; gap: 4px; }
+.impact-flag {
+  font-size: 10px; padding: 2px 7px; border-radius: 3px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); font-weight: 500;
+}
+
+/* BUTTONS */
+.btn {
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  padding: 7px 14px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text); cursor: pointer; transition: all .12s; letter-spacing: .01em;
+}
+.btn:hover { border-color: var(--border2); background: var(--surface); }
+.btn-primary {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.btn-primary:hover { background: #254D38; border-color: #254D38; }
+.btn-danger { color: var(--red); border-color: #E8C0C0; background: var(--red-bg); }
+.btn-danger:hover { background: #F5DEDE; }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+
+/* PIN PROMPT */
+.pin-overlay {
+  position: fixed; inset: 0; background: rgba(20,18,14,.6);
+  display: flex; align-items: center; justify-content: center; z-index: 300;
+}
+.pin-overlay.hidden { display: none; }
+.pin-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.75rem;
+  width: 320px; text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,.14);
+}
+.pin-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.pin-sub { font-size: 12px; color: var(--text3); margin-bottom: 1.25rem; line-height: 1.5; }
+.pin-input {
+  width: 100%; font-family: var(--mono); font-size: 20px; letter-spacing: .2em;
+  text-align: center; padding: 10px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--bg); color: var(--text);
+  margin-bottom: 1rem;
+}
+.pin-input:focus { outline: none; border-color: var(--accent-mid); }
+.pin-error { font-size: 11px; color: var(--red); margin-top: -8px; margin-bottom: 8px; min-height: 16px; }
+.pin-buttons { display: flex; gap: 8px; justify-content: center; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--accent); color: #fff;
+  font-size: 12px; font-weight: 500; padding: 9px 16px;
+  border-radius: var(--radius); z-index: 400;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .2s, transform .2s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-left">
+    <span class="app-logo">Culligan KC</span>
+    <span class="app-title">Decision Pipeline</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="header-meta" id="header-date"></span>
+    <button class="btn-new" onclick="openNew()">+ New topic</button>
+  </div>
+</header>
+
+<div class="metrics-bar" id="metrics-bar"></div>
+
+<div class="filter-bar">
+  <span class="filter-label">Filter</span>
+  <input class="search-input" type="text" placeholder="Search topics..." id="search-input" oninput="render()">
+  <select class="filter-select" id="filter-div" onchange="render()">
+    <option value="">All divisions</option>
+    <option value="HH">HH — Household</option>
+    <option value="DW">DW — Drinking water</option>
+    <option value="COM">COM — Commercial</option>
+    <option value="ALL">All divisions</option>
+  </select>
+  <select class="filter-select" id="filter-origin" onchange="render()">
+    <option value="">All origins</option>
+    <option value="Manager">Manager</option>
+    <option value="Tripod">Tripod</option>
+    <option value="Roundtable">Roundtable</option>
+    <option value="CEO">CEO directed</option>
+  </select>
+  <select class="filter-select" id="filter-declined" onchange="render()">
+    <option value="active">Hide declined</option>
+    <option value="all">Show all</option>
+    <option value="declined">Declined only</option>
+  </select>
+</div>
+
+<div class="pipeline-wrap">
+  <div class="pipeline" id="pipeline"></div>
+</div>
+
+<!-- MAIN MODAL -->
+<div class="overlay hidden" id="modal-overlay" onclick="overlayClick(event)">
+  <div class="modal" id="modal"></div>
+</div>
+
+<!-- PIN OVERLAY -->
+<div class="pin-overlay hidden" id="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-title">Tripod access required</div>
+    <div class="pin-sub">Stage advancement is restricted to Tripod members. Enter the PIN to continue.</div>
+    <input class="pin-input" type="password" maxlength="6" id="pin-input" placeholder="••••" onkeydown="pinKeydown(event)">
+    <div class="pin-error" id="pin-error"></div>
+    <div class="pin-buttons">
+      <button class="btn btn-sm" onclick="cancelPin()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitPin()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STAGES = [
+  {id:'queue',    label:'Queue'},
+  {id:'tripod',   label:'Tripod'},
+  {id:'exec',     label:'Exec leader'},
+  {id:'synch',    label:'Leader synch'},
+  {id:'complete', label:'Complete'}
+];
+
+const IMPACT_KEYS   = ['org','training','equip','facility','leadership','personnel','rules','money','time','rep'];
+const IMPACT_LABELS = ['Organization change','Training required','Equipment required','Facilities required','Leadership tie-in','Additional personnel','Rules/procedures change','Cost — money','Cost — time','Cost — reputation'];
+
+// PIN — change this value to set the Tripod PIN
+const TRIPOD_PIN = '1775';
+
+let topics = [];
+let nextId  = 1;
+let pinCallback = null;
+let currentDetailId = null;
+
+// ── PERSISTENCE ──────────────────────────────────────────────────────────────
+function save() {
+  localStorage.setItem('culligan_pipeline_topics', JSON.stringify(topics));
+  localStorage.setItem('culligan_pipeline_nextid', nextId);
+}
+function load() {
+  try {
+    const t = localStorage.getItem('culligan_pipeline_topics');
+    const n = localStorage.getItem('culligan_pipeline_nextid');
+    if (t) topics  = JSON.parse(t);
+    if (n) nextId  = parseInt(n);
+    if (!topics.length) seedSamples();
+  } catch(e) { seedSamples(); }
+}
+function seedSamples() {
+  topics = [
+    {id:1,title:'ServiceTitan dispatcher queue workflow',submitter:'James Shaw',origin:'Manager',division:'COM',
+     who:'Dispatch team',what:'Define ST queue logic for commercial jobs',where:'Olathe ops',
+     when:'Before April go-live',why:'Prevents bottlenecks at launch',stage:'tripod',declined:false,
+     impact:{org:true,training:true,equip:false,facility:false,leadership:true,personnel:false,rules:true,money:false,time:true,rep:false},
+     tripodNote:'Consensus: move forward — need IT input first.',execNote:'',synthNote:'',
+     actionOwner:'',actionDue:'',actionNote:'',submitted:'2026-03-15',lastUpdated:'2026-03-15'},
+    {id:2,title:'St. Joseph reputation recovery plan',submitter:'Reed',origin:'Tripod',division:'ALL',
+     who:'Sr Dir Sales, Dir Ops',what:'Structured approach to rebuild customer trust in StJo territory',
+     where:'St. Joseph',when:'Q2 2026',why:'Review scores declining, customer churn elevated',
+     stage:'queue',declined:false,
+     impact:{org:false,training:true,equip:false,facility:false,leadership:true,personnel:false,rules:false,money:true,time:true,rep:true},
+     tripodNote:'',execNote:'',synthNote:'',actionOwner:'',actionDue:'',actionNote:'',
+     submitted:'2026-03-18',lastUpdated:'2026-03-18'}
+  ];
+  nextId = 3;
+  save();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+  renderMetrics();
+  renderPipeline();
+}
+
+function renderMetrics() {
+  const active    = topics.filter(t => !t.declined && t.stage !== 'complete').length;
+  const inTripod  = topics.filter(t => t.stage === 'tripod' && !t.declined).length;
+  const complete  = topics.filter(t => t.stage === 'complete').length;
+  const declined  = topics.filter(t => t.declined).length;
+  const total     = topics.length;
+  document.getElementById('metrics-bar').innerHTML = `
+    <div class="metric-item"><div class="metric-val">${total}</div><div class="metric-label">Total topics</div></div>
+    <div class="metric-divider"></div>
+    <div class="metric-item"><div class="metric-val">${active}</div><div class="metric-label">Active</div></div>
+    <div class="metric-divider"></div>
+    <div class="metric-item"><div class="metric-val">${inTripod}</div><div class="metric-label">In Tripod</div></div>
+    <div class="metric-divider"></div>
+    <div class="metric-item"><div class="metric-val">${complete}</div><div class="metric-label">Complete</div></div>
+    <div class="metric-divider"></div>
+    <div class="metric-item"><div class="metric-val">${declined}</div><div class="metric-label">Declined</div></div>
+  `;
+}
+
+function getFiltered() {
+  const div      = document.getElementById('filter-div').value;
+  const origin   = document.getElementById('filter-origin').value;
+  const declined = document.getElementById('filter-declined').value;
+  const search   = document.getElementById('search-input').value.toLowerCase().trim();
+  return topics.filter(t => {
+    if (div    && t.division !== div) return false;
+    if (origin && t.origin   !== origin) return false;
+    if (declined === 'active'  && t.declined)  return false;
+    if (declined === 'declined' && !t.declined) return false;
+    if (search && !t.title.toLowerCase().includes(search) &&
+        !(t.submitter||'').toLowerCase().includes(search) &&
+        !(t.what||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+}
+
+function stageIdx(s) { return STAGES.findIndex(x => x.id === s); }
+
+function renderPipeline() {
+  const filtered = getFiltered();
+  document.getElementById('pipeline').innerHTML = STAGES.map(st => {
+    const cards = filtered.filter(t => t.stage === st.id);
+    return `<div class="lane">
+      <div class="lane-head">
+        <span class="lane-name">${st.label}</span>
+        <span class="lane-badge">${cards.length}</span>
+      </div>
+      <div class="lane-body">
+        ${cards.length === 0 ? '<div class="empty-msg">—</div>' : ''}
+        ${cards.map(t => cardHTML(t)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function cardHTML(t) {
+  const si = stageIdx(t.stage);
+  const originKey = t.origin.toLowerCase().replace(/ /g,'');
+  const divKey    = t.division.toLowerCase();
+  return `<div class="topic-card ${t.declined?'declined':''}" onclick="openDetail(${t.id})">
+    ${t.declined ? '<span class="card-declined-tag">Declined</span>' : ''}
+    <div class="card-title">${t.title}</div>
+    <div class="card-footer">
+      <span class="tag tag-${originKey}">${t.origin}</span>
+      <span class="tag tag-${divKey}">${t.division}</span>
+    </div>
+    <div class="card-dots">
+      ${STAGES.map((_,i) => `<div class="cdot ${i<=si?'on':''}"></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ── NEW TOPIC FORM ────────────────────────────────────────────────────────────
+function openNew() {
+  if (topics.filter(t=>!t.declined&&t.stage!=='complete').length >= 20) {
+    showToast('Active topic cap (20) reached. Complete or decline existing topics first.');
+    return;
+  }
+  showModal(buildForm(null));
+}
+
+function openEdit(id) {
+  const t = topics.find(x => x.id === id);
+  showModal(buildForm(t));
+}
+
+function buildForm(t) {
+  const imp = t ? t.impact : {};
+  const today = new Date().toISOString().split('T')[0];
+  return `
+    <div class="modal-head">
+      <div>
+        <div class="modal-head-title">${t ? 'Edit topic' : 'New topic'}</div>
+        <div class="modal-head-sub">${t ? 'Update submission details' : 'Add to the decision queue'}</div>
+      </div>
+      <button class="btn-close" onclick="closeModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="section-head">Identification</div>
+      <div class="field"><label>Title *</label><input id="f-title" value="${t?esc(t.title):''}" placeholder="Short descriptive title"></div>
+      <div class="field-row">
+        <div class="field"><label>Submitted by</label><input id="f-sub" value="${t?esc(t.submitter||''):''}" placeholder="Name or role"></div>
+        <div class="field"><label>Date</label><input id="f-date" type="date" value="${t?t.submitted:today}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Origin *</label>
+          <select id="f-origin">
+            ${['Manager','Tripod','Roundtable','CEO'].map(o=>`<option ${t&&t.origin===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Division</label>
+          <select id="f-div">
+            ${['HH','DW','COM','ALL'].map(d=>`<option ${t&&t.division===d?'selected':''}>${d}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div class="section-head">5 Ws</div>
+      <div class="field"><label>Who is involved?</label><input id="f-who" value="${t?esc(t.who||''):''}" placeholder="People, roles, or teams affected"></div>
+      <div class="field"><label>What is the issue or request?</label><textarea id="f-what">${t?esc(t.what||''):''}</textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Where does it apply?</label><input id="f-where" value="${t?esc(t.where||''):''}" placeholder="Territory, location, system"></div>
+        <div class="field"><label>When is it needed?</label><input id="f-when" value="${t?esc(t.when||''):''}" placeholder="Deadline or timeframe"></div>
+      </div>
+      <div class="field"><label>Why does it matter?</label><textarea id="f-why">${t?esc(t.why||''):''}</textarea></div>
+
+      <div class="section-head">Impact assessment <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);font-size:10px">— check all that apply</span></div>
+      <div class="impact-grid">
+        ${IMPACT_LABELS.map((label,i)=>`
+          <div class="impact-row">
+            <input type="checkbox" id="imp-${i}" ${imp[IMPACT_KEYS[i]]?'checked':''}>
+            <label for="imp-${i}" style="cursor:pointer">${label}</label>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div class="modal-foot-left">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+      </div>
+      <div class="modal-foot-right">
+        <button class="btn btn-primary" onclick="saveForm(${t?t.id:'null'})">${t?'Save changes':'Add to queue'}</button>
+      </div>
+    </div>
+  `;
+}
+
+function saveForm(id) {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { alert('Title is required.'); return; }
+  const impact = {};
+  IMPACT_KEYS.forEach((k,i) => { impact[k] = document.getElementById('imp-'+i).checked; });
+  const today = new Date().toISOString().split('T')[0];
+  if (id === 'null' || id === null) {
+    topics.push({
+      id: nextId++, title,
+      submitter: document.getElementById('f-sub').value.trim(),
+      origin:    document.getElementById('f-origin').value,
+      division:  document.getElementById('f-div').value,
+      submitted: document.getElementById('f-date').value || today,
+      who:   document.getElementById('f-who').value.trim(),
+      what:  document.getElementById('f-what').value.trim(),
+      where: document.getElementById('f-where').value.trim(),
+      when:  document.getElementById('f-when').value.trim(),
+      why:   document.getElementById('f-why').value.trim(),
+      stage: 'queue', declined: false, impact,
+      tripodNote:'', execNote:'', synthNote:'',
+      actionOwner:'', actionDue:'', actionNote:'',
+      lastUpdated: today
+    });
+    showToast('Topic added to queue.');
+  } else {
+    const t = topics.find(x => x.id === id);
+    Object.assign(t, {
+      title,
+      submitter: document.getElementById('f-sub').value.trim(),
+      origin:    document.getElementById('f-origin').value,
+      division:  document.getElementById('f-div').value,
+      submitted: document.getElementById('f-date').value,
+      who:   document.getElementById('f-who').value.trim(),
+      what:  document.getElementById('f-what').value.trim(),
+      where: document.getElementById('f-where').value.trim(),
+      when:  document.getElementById('f-when').value.trim(),
+      why:   document.getElementById('f-why').value.trim(),
+      impact, lastUpdated: today
+    });
+    showToast('Topic updated.');
+  }
+  save();
+  closeModal();
+  render();
+}
+
+// ── DETAIL VIEW ───────────────────────────────────────────────────────────────
+function openDetail(id) {
+  currentDetailId = id;
+  const t = topics.find(x => x.id === id);
+  showModal(buildDetail(t));
+}
+
+function buildDetail(t) {
+  const activeImpact = IMPACT_LABELS.filter((_,i) => t.impact[IMPACT_KEYS[i]]);
+  const originKey    = t.origin.toLowerCase().replace(/ /g,'');
+  const divKey       = t.division.toLowerCase();
+  return `
+    <div class="modal-head">
+      <div style="flex:1;min-width:0">
+        <div class="modal-head-title">${esc(t.title)}</div>
+        <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">
+          <span class="tag tag-${originKey}">${t.origin}</span>
+          <span class="tag tag-${divKey}">${t.division}</span>
+          ${t.declined?'<span class="tag" style="background:var(--red-bg);color:var(--red)">Declined</span>':''}
+        </div>
+      </div>
+      <button class="btn-close" onclick="closeModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="section-head">Pipeline stage <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--text3)">— Tripod PIN required to advance</span></div>
+      <div class="stage-nav">
+        ${STAGES.map(s=>`<button class="stage-btn ${t.stage===s.id?'active':''}" onclick="requestStageChange(${t.id},'${s.id}')">${s.label}</button>`).join('')}
+      </div>
+
+      <div class="section-head">Submission details</div>
+      <table class="detail-table">
+        <tr><td class="detail-key">Submitted by</td><td class="detail-val">${esc(t.submitter||'—')}</td></tr>
+        <tr><td class="detail-key">Date</td><td class="detail-val">${t.submitted||'—'}</td></tr>
+        <tr><td class="detail-key">Last updated</td><td class="detail-val">${t.lastUpdated||'—'}</td></tr>
+        <tr><td class="detail-key">Who</td><td class="detail-val">${esc(t.who||'—')}</td></tr>
+        <tr><td class="detail-key">What</td><td class="detail-val">${esc(t.what||'—')}</td></tr>
+        <tr><td class="detail-key">Where</td><td class="detail-val">${esc(t.where||'—')}</td></tr>
+        <tr><td class="detail-key">When</td><td class="detail-val">${esc(t.when||'—')}</td></tr>
+        <tr><td class="detail-key">Why</td><td class="detail-val">${esc(t.why||'—')}</td></tr>
+      </table>
+
+      ${activeImpact.length > 0 ? `
+      <div class="section-head">Impact flags</div>
+      <div class="impact-flags">${activeImpact.map(f=>`<span class="impact-flag">${f}</span>`).join('')}</div>
+      ` : ''}
+
+      <div class="section-head">Meeting notes</div>
+      <div class="note-box">
+        <div class="note-box-label"><div class="note-stage-dot dot-tripod"></div>Tripod — position / recommendation</div>
+        <textarea id="note-tripod" placeholder="What did Tripod decide or recommend?">${esc(t.tripodNote||'')}</textarea>
+      </div>
+      <div class="note-box">
+        <div class="note-box-label"><div class="note-stage-dot dot-exec"></div>Exec leader — CEO direction</div>
+        <textarea id="note-exec" placeholder="Approved / denied / modified? Any conditions?">${esc(t.execNote||'')}</textarea>
+      </div>
+      <div class="note-box">
+        <div class="note-box-label"><div class="note-stage-dot dot-synch"></div>Leader synch — published to the team</div>
+        <textarea id="note-synch" placeholder="What was communicated at the Leader Synch?">${esc(t.synthNote||'')}</textarea>
+      </div>
+
+      <div class="section-head">Decision record</div>
+      <div class="field-row" style="margin-bottom:.75rem">
+        <div class="field">
+          <label>Action owner</label>
+          <input id="note-owner" value="${esc(t.actionOwner||'')}" placeholder="Name or role">
+        </div>
+        <div class="field">
+          <label>Due date</label>
+          <input id="note-due" type="date" value="${t.actionDue||''}">
+        </div>
+      </div>
+      <div class="field">
+        <label>Decision / action summary</label>
+        <textarea id="note-action" rows="3" placeholder="What specifically will happen, by whom, by when?">${esc(t.actionNote||'')}</textarea>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <div class="modal-foot-left">
+        <button class="btn btn-danger btn-sm" onclick="declineToggle(${t.id})">${t.declined?'Restore':'Decline'}</button>
+        <button class="btn btn-sm" onclick="openEdit(${t.id})">Edit</button>
+      </div>
+      <div class="modal-foot-right">
+        <button class="btn" onclick="closeModal()">Close</button>
+        <button class="btn btn-primary" onclick="saveNotes(${t.id})">Save notes</button>
+      </div>
+    </div>
+  `;
+}
+
+function saveNotes(id) {
+  const t = topics.find(x => x.id === id);
+  t.tripodNote  = document.getElementById('note-tripod').value;
+  t.execNote    = document.getElementById('note-exec').value;
+  t.synthNote   = document.getElementById('note-synch').value;
+  t.actionOwner = document.getElementById('note-owner').value;
+  t.actionDue   = document.getElementById('note-due').value;
+  t.actionNote  = document.getElementById('note-action').value;
+  t.lastUpdated = new Date().toISOString().split('T')[0];
+  save();
+  closeModal();
+  render();
+  showToast('Notes saved.');
+}
+
+function declineToggle(id) {
+  const t = topics.find(x => x.id === id);
+  t.declined = !t.declined;
+  t.lastUpdated = new Date().toISOString().split('T')[0];
+  save();
+  openDetail(id);
+  render();
+}
+
+// ── PIN GATE ──────────────────────────────────────────────────────────────────
+function requestStageChange(id, stage) {
+  const t = topics.find(x => x.id === id);
+  if (t.stage === stage) return;
+  pinCallback = () => {
+    t.stage = stage;
+    t.lastUpdated = new Date().toISOString().split('T')[0];
+    save();
+    openDetail(id);
+    render();
+    showToast('Stage updated.');
+  };
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('pin-input').focus(), 50);
+}
+
+function submitPin() {
+  const val = document.getElementById('pin-input').value;
+  if (val === TRIPOD_PIN) {
+    document.getElementById('pin-overlay').classList.add('hidden');
+    if (pinCallback) { pinCallback(); pinCallback = null; }
+  } else {
+    document.getElementById('pin-error').textContent = 'Incorrect PIN. Try again.';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+
+function cancelPin() {
+  document.getElementById('pin-overlay').classList.add('hidden');
+  pinCallback = null;
+}
+
+function pinKeydown(e) {
+  if (e.key === 'Enter') submitPin();
+  if (e.key === 'Escape') cancelPin();
+}
+
+// ── MODAL HELPERS ─────────────────────────────────────────────────────────────
+function showModal(html) {
+  document.getElementById('modal').innerHTML = html;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+function overlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+load();
+render();
+</script>
+</body>
+</html>
